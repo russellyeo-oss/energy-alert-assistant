@@ -264,16 +264,17 @@ def create_results_issue(articles, processed_count):
         lines.append(f"- [{headline}]({url})")
 
     github_request(
-        "POST",
-        "/issues",
-        {
-            "title": (
-                f"{RESULT_PREFIX} - "
-                f"{len(articles)} relevant link(s)"
-            ),
-            "body": "\n".join(lines),
-        },
-    )
+    "POST",
+    "/issues",
+    {
+        "title": (
+            f"{RESULT_PREFIX} - "
+            f"{len(articles)} relevant link(s)"
+        ),
+        "body": "\n".join(lines),
+        "assignees": ["russellyeo-oss"],
+    },
+)
 
 
 def close_issue(issue_number):
