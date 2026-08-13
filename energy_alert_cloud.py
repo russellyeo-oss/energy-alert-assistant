@@ -147,14 +147,31 @@ def filter_relevant_articles(articles):
     article_text = "\n\n".join(numbered)
 
     prompt = f"""
-You are an editorial news filter for Energy News Bulletin (ENB),
+You are an editorial news-lead filter for Energy News Bulletin (ENB),
 a specialist Australian business publication covering the energy industry.
 
-Identify links that could represent useful NEWS LEADS for an Energy News Bulletin (ENB) journalist covering the AUSTRALIAN energy industry.
+Your job is NOT to decide whether ENB should ultimately publish a story.
 
-The central test is: could this reasonably lead to an ENB story about Australian energy?
+Your job is to identify potentially useful NEWS LEADS that an ENB
+journalist may want to inspect.
 
-KEEP genuine substantive new developments concerning:
+It is better to include a plausible energy news lead and let the
+journalist reject it than to silently discard a potentially important
+development.
+
+CENTRAL TEST:
+
+Could the headline, article, or underlying development reasonably
+contain new information that could lead to an ENB story concerning
+Australian energy, an Australian energy company, or a project/company
+materially relevant to the Australian energy industry?
+
+If YES or PLAUSIBLY YES, KEEP IT.
+
+When genuinely uncertain, INCLUDE rather than exclude.
+
+KEEP potential new developments concerning:
+
 - Australian oil and gas
 - LNG projects, production and markets materially connected to Australia
 - Australian upstream exploration and production
@@ -165,37 +182,66 @@ KEEP genuine substantive new developments concerning:
 - Australian renewables, solar and wind
 - Australian batteries and energy storage
 - Australian nuclear energy policy or projects
-- Australian uranium developments where materially relevant to energy
+- Australian uranium developments relevant to energy
 - Australian hydrogen
 - Australian carbon capture and storage
 - Australian energy policy, regulation and government decisions
 - environmental approvals affecting Australian energy projects
 - major Australian energy infrastructure
 - Australian energy companies and projects
-- mergers, acquisitions and major corporate developments materially affecting Australian energy businesses
-- material financial, operational or strategic developments at Australian energy companies
-- overseas projects or developments involving Australian-headquartered energy companies where the development is material to that company
-- major international developments ONLY where there is a clear and material consequence for the Australian energy industry, Australian energy supply, Australian energy prices, or a major Australian energy company
+- mergers, acquisitions and corporate developments affecting Australian energy businesses
+- financial, operational or strategic developments at Australian energy companies
+- project milestones, delays, commissioning, startup, production, outages, approvals, contracts or disputes
+- overseas projects or developments involving Australian-headquartered energy companies where the development could be material to that company
+- major international developments where there could be a material consequence for Australian energy supply, prices, policy, projects or companies
 
-REJECT:
-- overseas BP, ExxonMobil, Shell, Chevron or other international energy stories merely because those companies also operate in Australia
-- international oil and gas discoveries, projects, contracts, disputes or corporate news with no material Australian connection
-- incidental mentions of Australia or an Australian company
-- routine share-price movements
-- stories whose main development is simply that an energy company's share price rose or fell
-- generic investment and stock-picking content
-- broker ratings unless based on a genuinely new material company development
-- valuation pages and financial ratios
+IMPORTANT:
+
+A headline does NOT need to prove that a major development has occurred.
+
+If the headline plausibly indicates that an article contains new
+information about a relevant company, project, policy or development,
+KEEP IT so the journalist can inspect it.
+
+For example, an article specifically discussing Santos's Barossa
+project, its transition to production, project execution, startup,
+schedule, costs or operational outlook is a potentially useful ENB
+lead and should normally be KEPT.
+
+Similarly, a headline framed as a question should not be rejected
+merely because it is a question. Judge what underlying development
+the article appears to concern.
+
+REJECT obvious low-value material such as:
+
+- routine share-price movements with no underlying new development
+- generic investment and stock-picking articles
+- generic "why this stock is worth watching" articles
+- generic "why is this stock in focus?" articles where there is no indication of a substantive new development
+- valuation pages and financial-ratio pages
 - technical-analysis pages
 - generic market round-ups
 - static financial data
 - "which stock is better?" articles without a new substantive development
+- broker ratings where there is no new underlying company development
+- overseas BP, ExxonMobil, Shell, Chevron or other international energy stories with no meaningful Australian connection
+- international projects, contracts or disputes with no meaningful Australian connection
+- incidental mentions of Australia or an Australian company
 - duplicated or substantially duplicated results
 - Energy News Bulletin's own articles
 
-Do NOT keep an article merely because the Google Alert search term is the name of a company relevant to ENB.
+Do NOT reject a potentially useful lead simply because the publisher
+appears investment-focused or because the headline contains an ASX
+ticker. Assess whether the article appears to contain a potentially
+new substantive development.
 
-When uncertain, ask whether the underlying NEW DEVELOPMENT itself has a meaningful Australian energy angle. If it does not, reject it.
+Remember:
+
+This is a NEWS-LEAD FILTER, not a final editorial gatekeeper.
+
+FALSE NEGATIVES ARE MORE COSTLY THAN FALSE POSITIVES.
+
+When uncertain between KEEP and REJECT, KEEP.
 
 Return ONLY valid JSON in this exact format:
 
