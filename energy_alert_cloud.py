@@ -250,31 +250,41 @@ ARTICLES:
 
 
 def create_results_issue(articles, processed_count):
-    lines = [
-        f"Processed {processed_count} Google Alert issue(s).",
-        "",
-        "## Relevant energy links",
-        "",
+    html_lines = [
+        "<p><b>Relevant energy links</b></p>",
     ]
 
     for article in articles:
         headline = article["headline"] or article["url"]
         url = article["url"]
 
-        lines.append(f"- [{headline}]({url})")
+        html_lines.append(
+            f'<p><a href="{url}">{headline}</a></p>'
+        )
+
+    html_lines.append("<hr>")
+
+    if processed_count == 1:
+        html_lines.append(
+            "<p>Processed 1 Google Alert email.</p>"
+        )
+    else:
+        html_lines.append(
+            f"<p>Processed {processed_count} Google Alert emails.</p>"
+        )
 
     github_request(
-    "POST",
-    "/issues",
-    {
-        "title": (
-            f"{RESULT_PREFIX} - "
-            f"{len(articles)} relevant link(s)"
-        ),
-        "body": "\n".join(lines),
-        "assignees": ["russellyeo-oss"],
-    },
-)
+        "POST",
+        "/issues",
+        {
+            "title": (
+                f"{RESULT_PREFIX} - "
+                f"{len(articles)} relevant link(s)"
+            ),
+            "body": "\n".join(html_lines),
+            "assignees": ["russellyeo-oss"],
+        },
+    )
 
 
 def close_issue(issue_number):
