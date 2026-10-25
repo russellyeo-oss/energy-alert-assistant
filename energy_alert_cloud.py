@@ -352,11 +352,17 @@ if not issues:
 
 all_articles = []
 seen_urls = set()
+parsed_issues = []
 
 for issue in issues:
     body = issue.get("body", "")
 
     articles = extract_article_links(body)
+    if not articles:
+        # Never close an input issue that has not actually been parsed.
+        print("UNPARSED_SOURCE_ISSUE: %s retained" % issue["number"])
+        continue
+    parsed_issues.append(issue)
 
     for article in articles:
         if article["url"] in seen_urls:
@@ -382,7 +388,7 @@ print(
 if relevant_articles:
     create_results_issue(
         relevant_articles,
-        len(issues),
+        len(parsed_issues),
     )
 
     print("Results issue created.")
@@ -393,10 +399,10 @@ else:
 
 # Only close the source issues after all processing
 # above has completed successfully.
-for issue in issues:
+for issue in parsed_issues:
     close_issue(issue["number"])
 
 
 print(
-    f"Closed {len(issues)} processed source issue(s)."
+    f"Closed {len(parsed_issues)} parsed source issue(s); retained {len(issues) - len(parsed_issues)} unparsed issue(s)."
 )
