@@ -290,6 +290,15 @@ ARTICLES:
                 articles[number - 1]
             )
 
+    # Explicit Australian energy project/company leads must survive model false negatives.
+    # Only applies to already parsed descriptive article links.
+    selected = {a["url"] for a in relevant_articles}
+    for article in articles:
+        headline = article["headline"].casefold()
+        if any(term in headline for term in ("woodside energy", "scarborough lng", "browse gas", "barossa lng", "ichthys lng", "gorgon lng", "beetaloo gas", "australian gas", "australian electricity", "australian energy", "carbon credit scam")):
+            if article["url"] not in selected:
+                relevant_articles.append(article)
+                selected.add(article["url"])
     return relevant_articles
 
 
