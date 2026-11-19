@@ -84,7 +84,11 @@ def extract_article_links(html):
     for tag in soup.find_all("a", href=True):
         href = tag["href"].strip()
         headline = tag.get_text(" ", strip=True)
-        if not headline or headline.casefold() in navigation:
+        # A news lead must be identifiable from its clickable wording.
+        if (not headline or headline.casefold() in navigation or
+                len(headline.split()) < 3 or len(headline) < 18 or
+                headline.lower().startswith(("http://", "https://", "www.")) or
+                headline.casefold() in {"code of conduct", "register of lobbyists", "about the register", "read more here", "click here for details", "find out more", "view full article", "read full article"}):
             continue
         # Outlook can wrap the original Google redirect in Safe Links.
         for _ in range(3):
@@ -109,6 +113,12 @@ def extract_article_links(html):
                 domain.endswith(".energynewsbulletin.net") or
                 domain in {"facebook.com", "twitter.com", "x.com", "t.co", "www.facebook.com", "www.twitter.com", "www.x.com"} or
                 domain.endswith(".safelinks.protection.outlook.com")):
+            continue
+        # Reject static register/administration links, not reporting about them.
+        path = parsed.path.lower()
+        if ("lobbyist" in domain or
+                (domain.endswith(".gov.au") and any(t in path for t in ("registeroflobbyists", "lobbyistsregister", "/lobbyists/"))) or
+                path.rstrip("/").endswith(("/code-conduct", "/code-of-conduct", "/about-the-register.aspx"))):
             continue
         if not parsed.path.strip("/") or href in seen_urls:
             continue
@@ -198,6 +208,9 @@ merely because it is a question. Judge what underlying development
 the article appears to concern.
 
 REJECT obvious low-value material such as:
+
+- static registers, codes of conduct, navigation pages, and reference links rather than actual news or new substantive announcements
+- generic hyperlink labels that do not identify a story; never treat a geographic label or organisation name alone as a headline
 
 - routine share-price movements with no underlying new development
 - generic investment and stock-picking articles
