@@ -53,6 +53,8 @@ def failure_ids(message, raw):
     """
     body = plain(message.get('body', {}))
     parsed = BytesParser(policy=policy.default).parsebytes(raw)
+    if parsed.get_content_type() not in ('multipart/report', 'multipart/mixed', 'multipart/alternative', 'text/plain', 'text/html'):
+        return []
     ids = set(ID.findall(body))
     text_parts = [body]
     for part in parsed.walk():
@@ -128,7 +130,7 @@ def retry_report(session, original):
     subject = RETRY.sub('', original['subject']) + f' [retry {attempt + 1}/2]'
     body = original['body']
     payload = {'message': {'subject': subject,
-                           'body': {'contentType': body['contentType'], 'content': body['content']},
+                           'body': {'contentType': 'HTML' if body['contentType'].casefold() == 'html' else 'Text', 'content': body['content']},
                            'toRecipients': [{'emailAddress': {'address': DESTINATION}}]},
                'saveToSentItems': True}
     # Claim the exact original Sent Item BEFORE submission. Multiple NDRs
@@ -151,7 +153,7 @@ def run(session, now=None):
     cutoff = (now - timedelta(days=7)).isoformat(timespec='seconds').replace('+00:00', 'Z')
     incoming = list(pages(session, '/me/mailFolders/inbox/messages', {
         '$filter': 'receivedDateTime ge ' + cutoff,
-        '$select': 'id,subject,from,sender,internetMessageId,receivedDateTime,body,categories',
+        '$select': 'id,subject,from,sender,internetMessageId,receivedDateTime,categories',
         '$top': 100}))
     submitted = reviewed = exhausted = 0
     for notice in incoming:
@@ -165,7 +167,9 @@ def run(session, now=None):
             continue
         if now - received < timedelta(minutes=30):
             continue
-        raw = request(session, 'GET', '/me/messages/' + quote(notice['id'], safe='') + '/$value').content
+        path = '/me/messages/' + quote(notice['id'], safe='')
+        notice['body'] = request(session, 'GET', path, params={'$select':'body'}).json().get('body', {})
+        raw = request(session, 'GET', path + '/$value').content
         ids = failure_ids(notice, raw)
         if not ids:
             continue
