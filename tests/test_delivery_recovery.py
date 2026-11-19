@@ -59,6 +59,7 @@ class RecoveryTests(unittest.TestCase):
         m=original()
         with patch.object(d,'pages',return_value=iter([recent,n,n])), patch.object(d,'sent_report',return_value=m), patch.object(d,'request') as req:
             req.return_value.content=RAW
+            req.return_value.json.return_value={'body': n['body']}
             req.return_value.status_code=202
             d.run(None)
             self.assertEqual(sum(c.args[1]=='POST' for c in req.call_args_list),1)
