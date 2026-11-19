@@ -123,7 +123,13 @@ def extract_article_links(html):
         if not parsed.path.strip("/") or href in seen_urls:
             continue
         seen_urls.add(href)
-        articles.append({"headline": headline, "url": href})
+        # Google Alerts commonly puts the publisher and excerpt in a nearby table cell.
+        cell = tag.find_parent("td")
+        context = cell.get_text(" ", strip=True)[:1800] if cell else ""
+        article = {"headline": headline, "url": href}
+        if context and context != headline:
+            article["context"] = context
+        articles.append(article)
     return articles
 
 
@@ -136,7 +142,7 @@ def filter_relevant_articles(articles):
     for number, article in enumerate(articles, start=1):
         numbered.append(
             f"{number}. HEADLINE: {article['headline']}\n"
-            f"URL: {article['url']}"
+            f"URL: {article['url']}\nEXCERPT: {article.get('context', '')}"
         )
 
     article_text = "\n\n".join(numbered)
@@ -294,8 +300,8 @@ ARTICLES:
     # Only applies to already parsed descriptive article links.
     selected = {a["url"] for a in relevant_articles}
     for article in articles:
-        headline = article["headline"].casefold()
-        if any(term in headline for term in ("woodside energy", "scarborough lng", "browse gas", "barossa lng", "ichthys lng", "gorgon lng", "beetaloo gas", "australian gas", "australian electricity", "australian energy", "carbon credit scam")):
+        headline = (article["headline"] + " " + article.get("context", "")).casefold()
+        if any(term in headline for term in ("woodside energy", "scarborough lng", "browse gas", "barossa lng", "ichthys lng", "gorgon lng", "beetaloo gas", "australian gas", "australian electricity", "australian energy")):
             if article["url"] not in selected:
                 relevant_articles.append(article)
                 selected.add(article["url"])
