@@ -16,6 +16,17 @@ class IntakeSafetyTests(unittest.TestCase):
         alert = '<a href="https://www.google.com/url?sa=t&amp;url=https%3A%2F%2Fexample.com%2Fenergy-story">Energy story</a>'
         self.assertEqual(scope['extract_article_links'](alert), [{'headline': 'Energy story', 'url': 'https://example.com/energy-story'}])
 
+    def test_alternative_and_wrapped_links(self):
+        fn = next(n for n in TREE.body if isinstance(n, ast.FunctionDef) and n.name == 'extract_article_links')
+        scope = {'BeautifulSoup': BeautifulSoup, 'urllib': urllib}
+        exec(compile(ast.Module(body=[fn], type_ignores=[]), '<extract>', 'exec'), scope)
+        target = 'https://www.abc.net.au/news/example-gorgon-methane'
+        google = 'https://www.google.com/url?q=' + urllib.parse.quote(target, safe='')
+        wrapped = 'https://aus01.safelinks.protection.outlook.com/?url=' + urllib.parse.quote(google, safe='')
+        for href in (target, google, wrapped):
+            alert = f'<a href="{href}">Gorgon methane</a><a href="https://www.google.com/alerts">Edit this alert</a><a href="https://www.energynewsbulletin.net/article">ENB</a>'
+            self.assertEqual(scope['extract_article_links'](alert), [{'headline':'Gorgon methane','url':target}])
+
     def test_unparsed_issues_are_not_closed(self):
         self.assertIn('if not articles:', SOURCE)
         self.assertIn('parsed_issues.append(issue)', SOURCE)
