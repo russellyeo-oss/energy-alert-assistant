@@ -32,6 +32,15 @@ class DirectTests(unittest.TestCase):
             d.mark(MagicMock(),m,d.COMPLETE)
             self.assertEqual(req.call_args.kwargs['json'],{'categories':['Personal',d.COMPLETE]})
 
+    def test_move_marks_processed_message_read(self):
+        with patch.object(d,'request') as req:
+            d.move(MagicMock(),message(),'destination')
+            self.assertEqual(req.call_count,2)
+            self.assertEqual(req.call_args_list[0].args[1:3],('PATCH','/me/messages/id1'))
+            self.assertEqual(req.call_args_list[0].kwargs['json'],{'isRead': True})
+            self.assertEqual(req.call_args_list[1].args[1:3],('POST','/me/messages/id1/move'))
+            self.assertEqual(req.call_args_list[1].kwargs['json'],{'destinationId':'destination'})
+
     def test_digest_accepted_before_move(self):
         m = message()
         calls = []
