@@ -43,6 +43,13 @@ jobs:
           ENERGY_HOTMAIL_CACHE_KEY: ${{ secrets.ENERGY_HOTMAIL_CACHE_KEY }}
           ENERGY_HOTMAIL_TOKEN_B64: ${{ secrets.ENERGY_HOTMAIL_TOKEN_B64 }}
         run: python direct_hotmail.py --probe
+      - name: Recover confirmed delivery failures for both energy watches
+        if: inputs.mode == 'direct' || (github.event_name == 'schedule' && vars.DIRECT_HOTMAIL_ENABLED == 'YES')
+        continue-on-error: true
+        env:
+          ENERGY_HOTMAIL_CACHE_KEY: ${{ secrets.ENERGY_HOTMAIL_CACHE_KEY }}
+          ENERGY_HOTMAIL_TOKEN_B64: ${{ secrets.ENERGY_HOTMAIL_TOKEN_B64 }}
+        run: python delivery_recovery.py
       - name: Process direct personal Hotmail alerts
         if: inputs.mode == 'direct' || (github.event_name == 'schedule' && vars.DIRECT_HOTMAIL_ENABLED == 'YES')
         env:
