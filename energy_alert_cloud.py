@@ -76,59 +76,44 @@ def get_open_alert_issues():
 
 def extract_article_links(html):
     soup = BeautifulSoup(html or "", "html.parser")
-
-    articles = []
-    seen_urls = set()
-
+    articles, seen_urls = [], set()
+    google_hosts = {"www.google.com", "google.com", "www.google.com.au", "google.com.au"}
+    navigation = {"facebook", "twitter", "flag as irrelevant", "see more results",
+                  "edit this alert", "unsubscribe", "view all your alerts",
+                  "rss", "receive this alert as rss feed", "send feedback"}
     for tag in soup.find_all("a", href=True):
         href = tag["href"].strip()
-
-        parsed = urllib.parse.urlparse(href)
-
-        if parsed.netloc not in (
-            "www.google.com",
-            "google.com",
-            "www.google.com.au",
-            "google.com.au",
-        ):
-            continue
-
-        if parsed.path != "/url":
-            continue
-
-        query = urllib.parse.parse_qs(parsed.query)
-        article_urls = query.get("url")
-
-        if not article_urls:
-            continue
-
-        article_url = article_urls[0].strip()
-
-        if article_url in seen_urls:
-            continue
-
-        seen_urls.add(article_url)
-
-        domain = urllib.parse.urlparse(
-            article_url
-        ).netloc.lower()
-
-        # Do not alert ENB to its own stories.
-        if (
-            domain == "energynewsbulletin.net"
-            or domain.endswith(".energynewsbulletin.net")
-        ):
-            continue
-
         headline = tag.get_text(" ", strip=True)
-
-        articles.append(
-            {
-                "headline": headline,
-                "url": article_url,
-            }
-        )
-
+        if not headline or headline.casefold() in navigation:
+            continue
+        # Outlook can wrap the original Google redirect in Safe Links.
+        for _ in range(3):
+            parsed = urllib.parse.urlparse(href)
+            host = (parsed.hostname or "").lower()
+            params = urllib.parse.parse_qs(parsed.query)
+            if host.endswith(".safelinks.protection.outlook.com"):
+                values = params.get("url", [])
+            elif host in google_hosts and parsed.path == "/url":
+                values = params.get("url") or params.get("q") or []
+            else:
+                break
+            if not values:
+                break
+            href = values[0].strip()
+        parsed = urllib.parse.urlparse(href)
+        domain = (parsed.hostname or "").lower()
+        if parsed.scheme not in ("https", "http") or not domain or parsed.username or parsed.password:
+            continue
+        if (domain in google_hosts or domain.endswith(".google.com") or
+                domain.endswith(".google.com.au") or domain == "energynewsbulletin.net" or
+                domain.endswith(".energynewsbulletin.net") or
+                domain in {"facebook.com", "twitter.com", "x.com", "t.co", "www.facebook.com", "www.twitter.com", "www.x.com"} or
+                domain.endswith(".safelinks.protection.outlook.com")):
+            continue
+        if not parsed.path.strip("/") or href in seen_urls:
+            continue
+        seen_urls.add(href)
+        articles.append({"headline": headline, "url": href})
     return articles
 
 
