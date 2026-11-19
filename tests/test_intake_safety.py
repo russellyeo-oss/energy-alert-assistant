@@ -19,8 +19,8 @@ class IntakeSafetyTests(unittest.TestCase):
     def test_unparsed_issues_are_not_closed(self):
         self.assertIn('if not articles:', SOURCE)
         self.assertIn('parsed_issues.append(issue)', SOURCE)
-        self.assertIn('for issue in parsed_issues:\n    close_issue', SOURCE)
-        self.assertNotIn('for issue in issues:\n    close_issue', SOURCE)
+        self.assertIn('for issue in parsed_issues:\n        close_issue', SOURCE)
+        self.assertNotIn('for issue in issues:\n        close_issue', SOURCE)
 
 if __name__ == '__main__':
     unittest.main()
