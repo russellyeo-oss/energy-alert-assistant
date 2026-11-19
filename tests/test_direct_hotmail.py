@@ -11,6 +11,8 @@ def message(sender='googlealerts@google.com'):
 class DirectTests(unittest.TestCase):
     def test_only_google_sender_allowed(self):
         self.assertTrue(d.eligible(message()))
+        self.assertTrue(d.eligible(message('googlealerts-noreply@google.com')))
+        self.assertFalse(d.eligible(message('googlealerts-noreply@google.com.example.org')))
         self.assertFalse(d.eligible(message('other@example.com')))
         m = message()
         m['sender']['emailAddress']['address'] = 'other@example.com'
