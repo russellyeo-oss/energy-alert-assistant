@@ -13,8 +13,8 @@ class IntakeSafetyTests(unittest.TestCase):
         fn = next(n for n in TREE.body if isinstance(n, ast.FunctionDef) and n.name == 'extract_article_links')
         scope = {'BeautifulSoup': BeautifulSoup, 'urllib': urllib}
         exec(compile(ast.Module(body=[fn], type_ignores=[]), '<extract>', 'exec'), scope)
-        alert = '<a href="https://www.google.com/url?sa=t&amp;url=https%3A%2F%2Fexample.com%2Fenergy-story">Energy story</a>'
-        self.assertEqual(scope['extract_article_links'](alert), [{'headline': 'Energy story', 'url': 'https://example.com/energy-story'}])
+        alert = '<a href="https://www.google.com/url?sa=t&amp;url=https%3A%2F%2Fexample.com%2Fenergy-story">Australian energy project advances</a>'
+        self.assertEqual(scope['extract_article_links'](alert), [{'headline': 'Australian energy project advances', 'url': 'https://example.com/energy-story'}])
 
     def test_alternative_and_wrapped_links(self):
         fn = next(n for n in TREE.body if isinstance(n, ast.FunctionDef) and n.name == 'extract_article_links')
@@ -24,8 +24,27 @@ class IntakeSafetyTests(unittest.TestCase):
         google = 'https://www.google.com/url?q=' + urllib.parse.quote(target, safe='')
         wrapped = 'https://aus01.safelinks.protection.outlook.com/?url=' + urllib.parse.quote(google, safe='')
         for href in (target, google, wrapped):
-            alert = f'<a href="{href}">Gorgon methane</a><a href="https://www.google.com/alerts">Edit this alert</a><a href="https://www.energynewsbulletin.net/article">ENB</a>'
-            self.assertEqual(scope['extract_article_links'](alert), [{'headline':'Gorgon methane','url':target}])
+            alert = f'<a href="{href}">Gorgon LNG methane emissions under scrutiny</a><a href="https://www.google.com/alerts">Edit this alert</a><a href="https://www.energynewsbulletin.net/article">ENB</a>'
+            self.assertEqual(scope['extract_article_links'](alert), [{'headline':'Gorgon LNG methane emissions under scrutiny','url':target}])
+
+    def test_reference_links_not_news_headlines(self):
+        fn = next(n for n in TREE.body if isinstance(n, ast.FunctionDef) and n.name == 'extract_article_links')
+        scope = {'BeautifulSoup': BeautifulSoup, 'urllib': urllib}
+        exec(compile(ast.Module(body=[fn], type_ignores=[]), '<extract>', 'exec'), scope)
+        references = [
+            ('Western Australia', 'https://www.lobbyists.wa.gov.au/code-conduct'),
+            ('Queensland', 'https://www.integrity.qld.gov.au/lobbyists/about-the-register.aspx'),
+            ('NSW', 'http://www.lobbyists.elections.nsw.gov.au/registeroflobbyists'),
+            ('Victoria', 'http://www.lobbyistsregister.vic.gov.au/lobbyistsregister/index.cfm'),
+            ('Federally', 'http://lobbyists.ag.gov.au/register'),
+            ('APGRA’s Code of Conduct', 'http://www.apgra.org.au/code-of-conduct'),
+            ('Read more here', 'https://example.com/a-story'),
+        ]
+        links = ''.join(f'<a href="{url}">{label}</a>' for label,url in references)
+        article = '<a href="https://www.abc.net.au/news/example-gorgon">Critics question methane emissions at Gorgon LNG project</a>'
+        self.assertEqual(scope['extract_article_links'](links + article), [
+            {'headline':'Critics question methane emissions at Gorgon LNG project',
+             'url':'https://www.abc.net.au/news/example-gorgon'}])
 
     def test_unparsed_issues_are_not_closed(self):
         self.assertIn('if not articles:', SOURCE)
