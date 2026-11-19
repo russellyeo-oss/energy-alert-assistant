@@ -46,6 +46,23 @@ class IntakeSafetyTests(unittest.TestCase):
             {'headline':'Critics question methane emissions at Gorgon LNG project',
              'url':'https://www.abc.net.au/news/example-gorgon'}])
 
+    def test_explicit_energy_leads_survive_empty_model_selection(self):
+        from types import SimpleNamespace
+        import json
+        fn = next(n for n in TREE.body if isinstance(n, ast.FunctionDef) and n.name == 'filter_relevant_articles')
+        client = SimpleNamespace(responses=SimpleNamespace(create=lambda **kw: SimpleNamespace(output_text='{"relevant": []}')))
+        scope = {'json': json, 'client': client, 'MODEL': 'test'}
+        exec(compile(ast.Module(body=[fn], type_ignores=[]), '<filter>', 'exec'), scope)
+        headlines = [
+            "Woodside Energy (ASX:WDS) Shares Rise 19% in a Year. What's Next for Scarborough LNG?",
+            "Why did quarterly revenue rise at Woodside Energy (ASX:WDS) as production dipped?",
+            "'Invisible forests': study reveals carbon credit scam",
+            "Generic stock price roundup",
+        ]
+        articles = [{'headline': h, 'url': 'https://example.com/' + str(i)} for i, h in enumerate(headlines)]
+        articles[2]['context'] = "If Woodside's Browse gas drilling goes ahead, it would release emissions."
+        self.assertEqual(scope['filter_relevant_articles'](articles), articles[:3])
+
     def test_unparsed_issues_are_not_closed(self):
         self.assertIn('if not articles:', SOURCE)
         self.assertIn('parsed_issues.append(issue)', SOURCE)
