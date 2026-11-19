@@ -343,66 +343,72 @@ def close_issue(issue_number):
     )
 
 
-issues = get_open_alert_issues()
 
-if not issues:
-    print("No alert issues waiting.")
-    raise SystemExit
+def main():
+    issues = get_open_alert_issues()
+
+    if not issues:
+        print("No alert issues waiting.")
+        raise SystemExit
 
 
-all_articles = []
-seen_urls = set()
-parsed_issues = []
+    all_articles = []
+    seen_urls = set()
+    parsed_issues = []
 
-for issue in issues:
-    body = issue.get("body", "")
+    for issue in issues:
+        body = issue.get("body", "")
 
-    articles = extract_article_links(body)
-    if not articles:
-        # Never close an input issue that has not actually been parsed.
-        print("UNPARSED_SOURCE_ISSUE: %s retained" % issue["number"])
-        continue
-    parsed_issues.append(issue)
-
-    for article in articles:
-        if article["url"] in seen_urls:
+        articles = extract_article_links(body)
+        if not articles:
+            # Never close an input issue that has not actually been parsed.
+            print("UNPARSED_SOURCE_ISSUE: %s retained" % issue["number"])
             continue
+        parsed_issues.append(issue)
 
-        seen_urls.add(article["url"])
-        all_articles.append(article)
+        for article in articles:
+            if article["url"] in seen_urls:
+                continue
 
-
-print(f"Alert issues waiting: {len(issues)}")
-print(f"Unique candidate links: {len(all_articles)}")
-
-
-relevant_articles = filter_relevant_articles(
-    all_articles
-)
-
-print(
-    f"Relevant links: {len(relevant_articles)}"
-)
+            seen_urls.add(article["url"])
+            all_articles.append(article)
 
 
-if relevant_articles:
-    create_results_issue(
-        relevant_articles,
-        len(parsed_issues),
+    print(f"Alert issues waiting: {len(issues)}")
+    print(f"Unique candidate links: {len(all_articles)}")
+
+
+    relevant_articles = filter_relevant_articles(
+        all_articles
     )
 
-    print("Results issue created.")
-
-else:
-    print("No relevant links found.")
-
-
-# Only close the source issues after all processing
-# above has completed successfully.
-for issue in parsed_issues:
-    close_issue(issue["number"])
+    print(
+        f"Relevant links: {len(relevant_articles)}"
+    )
 
 
-print(
-    f"Closed {len(parsed_issues)} parsed source issue(s); retained {len(issues) - len(parsed_issues)} unparsed issue(s)."
-)
+    if relevant_articles:
+        create_results_issue(
+            relevant_articles,
+            len(parsed_issues),
+        )
+
+        print("Results issue created.")
+
+    else:
+        print("No relevant links found.")
+
+
+    # Only close the source issues after all processing
+    # above has completed successfully.
+    for issue in parsed_issues:
+        close_issue(issue["number"])
+
+
+    print(
+        f"Closed {len(parsed_issues)} parsed source issue(s); retained {len(issues) - len(parsed_issues)} unparsed issue(s)."
+    )
+
+
+if __name__ == '__main__':
+    main()
