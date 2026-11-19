@@ -70,7 +70,8 @@ def folder(session, name):
 def eligible(message):
     def address(field):
         return message.get(field, {}).get('emailAddress', {}).get('address', '').casefold()
-    return address('from') == 'googlealerts@google.com' and address('sender') == 'googlealerts@google.com'
+    allowed = {'googlealerts@google.com', 'googlealerts-noreply@google.com'}
+    return address('from') in allowed and address('sender') in allowed
 
 
 def message_path(message):
