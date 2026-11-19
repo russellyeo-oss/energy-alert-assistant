@@ -85,6 +85,8 @@ def mark(session, message, category):
 
 
 def move(session, message, destination):
+    # Only called for successfully completed alerts, including cleanup retries.
+    request(session, 'PATCH', message_path(message), json={'isRead': True})
     request(session, 'POST', message_path(message) + '/move', json={'destinationId':destination})
 
 
