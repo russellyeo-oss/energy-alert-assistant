@@ -90,6 +90,25 @@ def move(session, message, destination):
     request(session, 'POST', message_path(message) + '/move', json={'destinationId':destination})
 
 
+def submit_digest(session, message):
+    mode = os.environ.get('ENERGY_DELIVERY_MODE', 'direct')
+    if message.get('toRecipients') != [{'emailAddress': {'address': DESTINATION}}]:
+        raise RuntimeError('Unexpected digest recipient')
+    if mode == 'queue':
+        queue = folder(session, 'ENB Outbound Queue')
+        result = request(session, 'POST', '/me/mailFolders/' + quote(queue, safe='') + '/messages', json=message)
+        expected = 201
+    elif mode == 'direct':
+        result = request(session, 'POST', '/me/sendMail', json={'message': message, 'saveToSentItems': True})
+        expected = 202
+    else:
+        raise RuntimeError('Unknown ENERGY_DELIVERY_MODE')
+    if result.status_code != expected:
+        raise RuntimeError('Digest acceptance not confirmed; claimed messages retained')
+    if mode == 'queue':
+        print('Digest queued for work-account delivery (not yet confirmed received)')
+
+
 def run(session, probe=False):
     source, destination = folder(session, INBOX), folder(session, DONE)
     messages = list(pages(session, '/me/mailFolders/' + quote(source,safe='') + '/messages',
@@ -106,7 +125,7 @@ def run(session, probe=False):
             move(session, m, destination)
             continue
         if CLAIM in m.get('categories', []):
-            print('ATTENTION: claimed message retained for Sent Items reconciliation')
+            print('ATTENTION: claimed message retained for queue or Sent Items reconciliation')
             continue
         links = extract_article_links(m.get('body', {}).get('content', ''))
         if not links:
@@ -127,13 +146,10 @@ def run(session, probe=False):
         lines.append(f'<hr><p>Processed {len(pending)} Google Alert emails.</p>')
         for m in pending:
             mark(session, m, CLAIM)
-        result = request(session, 'POST','/me/sendMail', json={
-            'message':{'subject':f'Energy Alert Assistant – {len(relevant)} relevant link(s)',
-                       'body':{'contentType':'HTML','content':'\n'.join(lines)},
-                       'toRecipients':[{'emailAddress':{'address':DESTINATION}}]},
-            'saveToSentItems':True})
-        if result.status_code != 202:
-            raise RuntimeError('Digest acceptance not confirmed; claimed messages retained')
+        submit_digest(session, {
+            'subject':f'Energy Alert Assistant – {len(relevant)} relevant link(s)',
+            'body':{'contentType':'HTML','content':'\n'.join(lines)},
+            'toRecipients':[{'emailAddress':{'address':DESTINATION}}]})
     for m in pending:
         mark(session, m, COMPLETE)
     for m in pending:

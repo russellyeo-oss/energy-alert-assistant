@@ -43,8 +43,8 @@ jobs:
           ENERGY_HOTMAIL_CACHE_KEY: ${{ secrets.ENERGY_HOTMAIL_CACHE_KEY }}
           ENERGY_HOTMAIL_TOKEN_B64: ${{ secrets.ENERGY_HOTMAIL_TOKEN_B64 }}
         run: python direct_hotmail.py --probe
-      - name: Recover confirmed delivery failures for both energy watches
-        if: inputs.mode == 'direct' || (github.event_name == 'schedule' && vars.DIRECT_HOTMAIL_ENABLED == 'YES')
+      - name: Recover legacy Hotmail delivery failures only when explicitly enabled
+        if: vars.LEGACY_HOTMAIL_RECOVERY_ENABLED == 'YES' && (inputs.mode == 'direct' || (github.event_name == 'schedule' && vars.DIRECT_HOTMAIL_ENABLED == 'YES'))
         continue-on-error: true
         env:
           ENERGY_HOTMAIL_CACHE_KEY: ${{ secrets.ENERGY_HOTMAIL_CACHE_KEY }}
@@ -58,6 +58,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          ENERGY_DELIVERY_MODE: queue
         run: python direct_hotmail.py
       - name: Save encrypted renewed token
         if: always() && (inputs.mode == 'probe' || inputs.mode == 'direct' || (github.event_name == 'schedule' && vars.DIRECT_HOTMAIL_ENABLED == 'YES')) && hashFiles('.hotmail-cache/token.enc') != ''
